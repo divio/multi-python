@@ -39,6 +39,11 @@ RUN apt-get update \
 # Install python versions using pyenv
 RUN git clone https://github.com/pyenv/pyenv $PYENV_ROOT
 
+# TODO
+ENV DISTUTILS_DEBUG=1
+ENV PYTHON_MAKE_OPTS="-d -p"
+ENV PYENV_DEBUG=1
+
 # hadolint ignore=SC2086
 RUN for version in ${PYTHON_VERSIONS}; do \
   set -ex \
