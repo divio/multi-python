@@ -1,4 +1,4 @@
-image: docker:stable
+image: docker:latest
 
 include:
   - project: divio/infra/gitlab-pipelines
@@ -18,7 +18,6 @@ linting:
 
 .build:
   stage: build
-  image: docker:latest
   needs: []
   before_script:
     - mkdir -p /usr/libexec/docker/cli-plugins
