@@ -27,6 +27,7 @@ linting:
     - docker buildx version
     - docker buildx create --use
     - docker login -u ${CI_REGISTRY_USER} -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
+    - docker run --rm --privileged linuxkit/binfmt:af88a591f9cc896a52ce596b9cf7ca26a061ef97
   script:
     - if [ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]; then
         extra_tag="--tag ${CI_REGISTRY_IMAGE}:latest";
