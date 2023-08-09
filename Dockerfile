@@ -2,7 +2,8 @@ FROM ubuntu:22.04
 
 # List of python versions to install, space separated
 # The first version will be the default (used by tox)
-ARG PYTHON_VERSIONS="3.11 pypy3.9 3.7 3.8 3.9 3.10"
+#ARG PYTHON_VERSIONS="3.11 pypy3.9 3.7 3.8 3.9 3.10"
+ARG PYTHON_VERSIONS="3.9 3.8"
 
 ENV PYENV_ROOT /root/.pyenv
 ENV DEBIAN_FRONTEND noninteractive
