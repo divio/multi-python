@@ -45,9 +45,11 @@ RUN for version in ${PYTHON_VERSIONS}; do \
     && /root/.pyenv/versions/${version}*/bin/python -m pip install --upgrade pip \
   ; done
 ENV PATH $PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH
+# hadolint ignore=SC2046
 RUN pyenv global $(pyenv versions --bare)
 
 # Setup commandline tools (using the first python version in the list)
+# hadolint ignore=DL3013
 RUN pip install --no-cache-dir tox
 
 CMD ["python"]
