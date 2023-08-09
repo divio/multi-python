@@ -1,0 +1,88 @@
+image: docker:stable
+
+include:
+  - project: divio/infra/gitlab-pipelines
+    ref: master
+    file: base/.gitlab-ci.yml
+
+variables:
+  BUILDX_VERSION: v0.11.2
+  BUILDX_ARCH: linux-amd64
+  PLATFORMS: linux/arm64/v8,linux/amd64
+  PUBLIC_REPOSITORY: divio/multi-python
+  BUILDX_URL: https://github.com/docker/buildx/releases/download/${BUILDX_VERSION}/buildx-${BUILDX_VERSION}.${BUILDX_ARCH}
+  LINT_FILE_DOCKER: Dockerfile
+
+linting:
+  allow_failure: true
+
+.build:
+  stage: build
+  image: docker:latest
+  needs: []
+  before_script:
+    - mkdir -p /usr/libexec/docker/cli-plugins
+    - wget -q -O /usr/libexec/docker/cli-plugins/docker-buildx ${BUILDX_URL}
+    - chmod +x /usr/libexec/docker/cli-plugins/docker-buildx
+    - docker buildx version
+    - docker buildx create --use
+    - docker login -u ${CI_REGISTRY_USER} -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
+  script:
+    - if [ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]; then
+        extra_tag="--tag ${CI_REGISTRY_IMAGE}:latest";
+      fi
+    - echo "extra_tag=${extra_tag:-}"
+    - >
+      docker buildx build
+      --platform ${PLATFORMS}
+      --tag ${IMAGE_NAME}
+      ${extra_tag:-}
+      --push
+      .
+
+build-dev:
+  extends: .build
+  variables:
+    IMAGE_NAME: ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}
+  except:
+    - tags
+
+
+build-prod:
+  extends: .build
+  variables:
+    IMAGE_NAME: ${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}
+  only:
+    - tags
+
+push:
+  stage: release
+  needs:
+    - build-prod
+  image:
+    name: ananace/skopeo
+    entrypoint: [""]
+  variables:
+    GIT_STRATEGY: none
+    IMAGE_NAME: ${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}
+    SRC_REGISTRY_CREDS: ${CI_REGISTRY_USER}:${CI_JOB_TOKEN}
+    DST_REGISTRY_CREDS: ${DOCKER_HUB_USER}:${DOCKER_HUB_TOKEN}
+  script:
+    - >
+      /skopeo
+      copy
+      --multi-arch all
+      --src-creds=${SRC_REGISTRY_CREDS}
+      --dest-creds=${DST_REGISTRY_CREDS}
+      docker://${CI_REGISTRY_IMAGE}:latest
+      docker://${PUBLIC_REPOSITORY}:latest
+    - >
+      /skopeo
+      copy
+      --multi-arch all
+      --src-creds=${SRC_REGISTRY_CREDS}
+      --dest-creds=${DST_REGISTRY_CREDS}
+      docker://${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}
+      docker://${PUBLIC_REPOSITORY}:${CI_COMMIT_TAG}
+  only:
+    - tags
