@@ -31,10 +31,11 @@ linting:
     # Update the QEMU version on the host
     - docker run --rm --privileged linuxkit/binfmt:af88a591f9cc896a52ce596b9cf7ca26a061ef97
   script:
-    - if [ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]; then
+    # This allows to also push the tag "latest" when running on the main branch
+    - if [ "$CI_COMMIT_BRANCH" == "init" ]; then
         extra_tag="--tag ${CI_REGISTRY_IMAGE}:latest";
       fi
-    - echo "extra_tag=${extra_tag:-}"
+    - echo "Using extra_tag=${extra_tag:-}"
     - >
       docker buildx build
       --platform ${PLATFORMS}
@@ -46,10 +47,9 @@ linting:
 build-dev:
   extends: .build
   variables:
-    IMAGE_NAME: ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}
+    IMAGE_NAME: ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_IID}
   except:
     - tags
-
 
 build-prod:
   extends: .build
