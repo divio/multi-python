@@ -1,9 +1,25 @@
 FROM ubuntu:22.04
 
+# All python versions to install, space separated
+ARG PYTHON_VERSIONS="3.7 3.8 3.9 3.10 3.11"
+# Main python version to use for tox
+ARG PYTHON_MAIN_VERSION=3.11
+# PyPy version, see https://www.pypy.org/download.html
+ARG PYTHON_PYPY_VERSION=3.9-v7.3.12
+
 ARG GPG_KEY=F23C5A6CF475977595C89F51BA6932366A755776
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Create user and app directory
+RUN set -eux \
+    ; groupadd -r tox --gid=10000 \
+    ; useradd --no-log-init -r -g tox -m --uid=10000 tox \
+    ; mkdir /app \
+    ; chown tox:tox /app
 
 # Install common build dependencies, add deadsnakes PPA and cleanup.
 # (see https://github.com/deadsnakes)
+# hadolint ignore=DL3008,SC2086
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
@@ -11,68 +27,59 @@ RUN set -eux; \
         g++ \
         gcc \
         git \
-        make; \
+        curl \
+        bzip2 \
+        make \
+    ; savedAptMark="$(apt-mark showmanual)" \
     \
-    savedAptMark="$(apt-mark showmanual)"; \
-    apt-get install -y --no-install-recommends \
+    ; apt-get install -y --no-install-recommends \
         dirmngr \
-        gnupg; \
+        gnupg \
     \
-    export GNUPGHOME="$(mktemp -d)"; \
-    gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys "$GPG_KEY"; \
-    gpg -o /usr/share/keyrings/deadsnakes.gpg --export "$GPG_KEY"; \
-    echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/deadsnakes.gpg] https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu jammy main" >> /etc/apt/sources.list; \
+    ; tmp_home="$(mktemp -d)"; export GNUPGHOME="$tmp_home" \
+    ; gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys "$GPG_KEY" \
+    ; gpg -o /usr/share/keyrings/deadsnakes.gpg --export "$GPG_KEY" \
+    ; echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/deadsnakes.gpg] https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu jammy main" >> /etc/apt/sources.list \
     \
-    apt-mark auto '.*' > /dev/null; \
-    apt-mark manual $savedAptMark; \
-    apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
-    rm -rf /var/lib/apt/lists/*
+    ; apt-mark auto '.*' > /dev/null \
+    ; apt-mark manual $savedAptMark \
+    ; apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+    ; rm -rf /var/lib/apt/lists/*
 
-# Install Python and pip and cleanup.
-RUN set -eux; \
-    apt-get update; \
-    DEBIAN_FRONTEND=noninteractive \
-    apt-get install -y --no-install-recommends \
-        python3.7 \
-        python3.8 \
-        python3.9 \
-        python3.10 \
-        python3.11 \
-        \
-        python3.7-dev \
-        python3.8-dev \
-        python3.9-dev \
-        python3.10-dev \
-        python3.11-dev \
-        \
-        python3.7-venv \
-        python3.8-venv \
-        python3.9-venv \
-        python3.10-venv \
-        python3.11-venv \
-        \
-        python3.7-distutils \
-        python3.8-distutils \
-        python3.9-distutils \
-        python3.10-distutils \
-        python3.11-distutils \
-        \
-        python3-pip; \
-    rm -rf /var/lib/apt/lists/*; \
-    \
-    python3.11 -m pip install --upgrade pip
+# Install pip3, all python versions and tox in the main python version
+# hadolint ignore=DL3008,SC2086
+RUN set -eux \
+  ; apt-get update \
+  ; apt-get install -y --no-install-recommends python3-pip \
+  \
+  ; for version in ${PYTHON_VERSIONS} ${PYTHON_MAIN_VERSION} \
+    ; do \
+      apt-get install -y --no-install-recommends \
+        python${version} \
+        python${version}-dev \
+        python${version}-venv \
+        python${version}-distutils \
+      ; python${version} -m pip install --upgrade pip \
+    ; done \
+  \
+  ; python${PYTHON_MAIN_VERSION} -m pip install --no-cache tox \
+  \
+  ; rm -rf /var/lib/apt/lists/*;
 
-# Install tox and add a user with an explicit UID/GID.
-# Add safe.directory to git to avoid setuptools_scm "unable to detect version"
-# (see https://github.com/pypa/setuptools_scm/issues/797)
-RUN set -eux; \
-    pip3.11 install --no-cache tox; \
-    groupadd -r tox --gid=10000; \
-    useradd --no-log-init -r -g tox -m --uid=10000 tox; \
-    git config --global --add safe.directory '*'; \
-    mkdir /app; \
-    chown tox:tox /app
+# Install PyPy
+RUN if [ "$TARGETARCH" = "arm64" ] ; then curl -L --show-error --retry 5 -o /pypy.tar.bz2 https://downloads.python.org/pypy/pypy-${PYTHON_PYPY_VERSION}-linux64.tar.bz2 \
+    ; else curl -L --show-error --retry 5 -o /pypy.tar.bz2 https://downloads.python.org/pypy/pypy${PYTHON_PYPY_VERSION}-aarch64.tar.bz2 \
+    ; fi \
+    ; mkdir /pypy && tar -xf /pypy.tar.bz2 -C /pypy --strip-components=1
 
+ENV PATH="/pypy/bin;$PATH"
+
+# Set the working directory and user
 WORKDIR /app
 VOLUME /app
 USER tox
+
+# Add safe.directory to git to avoid setuptools_scm "unable to detect version"
+# (see https://github.com/pypa/setuptools_scm/issues/797)
+# This needs to run as user tox
+RUN git config --global --add safe.directory '*'
