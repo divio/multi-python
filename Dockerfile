@@ -63,15 +63,16 @@ RUN set -eux; \
     python3.11 -m pip install --upgrade pip
 
 # Install tox and add a user with an explicit UID/GID.
+# Add safe.directory to git to avoid setuptools_scm "unable to detect version"
+# (see https://github.com/pypa/setuptools_scm/issues/797)
 RUN set -eux; \
     pip3.11 install --no-cache tox; \
     groupadd -r tox --gid=10000; \
     useradd --no-log-init -r -g tox -m --uid=10000 tox; \
+    git config --global --add safe.directory '*'; \
     mkdir /app; \
     chown tox:tox /app
 
 WORKDIR /app
 VOLUME /app
-
 USER tox
-ENTRYPOINT ["tox"]
