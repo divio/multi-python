@@ -10,9 +10,9 @@ The list of Python versions to install is passed as arguments (see `Dockerfile`)
 One Python version must be selected as "main" - it will be used to install `tox`.
 Along with "regular" Python versions, one pypy version will also be installed.
 
-**IMPORTANT**: Python versions must be available either in the official Ubuntu repositories or in
-the [deadsnakes PPA](https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa). The PyPy version should
-be available at https://www.pypy.org/download.html.
+**IMPORTANT**: Python versions must be available from either the official Ubuntu repositories or the
+[deadsnakes PPA](https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa). The PyPy version should be
+available at https://www.pypy.org/download.html.
 
 ## Usage
 

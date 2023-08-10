@@ -84,4 +84,4 @@ USER tox
 # Add safe.directory to git to avoid setuptools_scm "unable to detect version"
 # (see https://github.com/pypa/setuptools_scm/issues/797)
 # This needs to run as user tox
-RUN git config --global --add safe.directory '/app'
+RUN git config --global --add safe.directory '*'
