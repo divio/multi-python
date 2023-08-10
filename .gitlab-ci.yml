@@ -20,12 +20,15 @@ linting:
   stage: build
   needs: []
   before_script:
+    # Install buildx
     - mkdir -p /usr/libexec/docker/cli-plugins
     - wget -q -O /usr/libexec/docker/cli-plugins/docker-buildx ${BUILDX_URL}
     - chmod +x /usr/libexec/docker/cli-plugins/docker-buildx
     - docker buildx version
     - docker buildx create --use
+    # Login to the Gitlab registry
     - docker login -u ${CI_REGISTRY_USER} -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
+    # Update the QEMU version on the host
     - docker run --rm --privileged linuxkit/binfmt:af88a591f9cc896a52ce596b9cf7ca26a061ef97
   script:
     - if [ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]; then
