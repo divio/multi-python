@@ -1,61 +1,77 @@
 FROM ubuntu:22.04
 
-# List of python versions to install, space separated
-# The first version will be the default (used by tox)
-#ARG PYTHON_VERSIONS="3.11 pypy3.9 3.7 3.8 3.9 3.10"
-ARG PYTHON_VERSIONS="3.9 3.8"
+ARG GPG_KEY=F23C5A6CF475977595C89F51BA6932366A755776
 
-ENV PYENV_ROOT /root/.pyenv
-ENV DEBIAN_FRONTEND noninteractive
+# Install common build dependencies, add deadsnakes PPA and cleanup.
+# (see https://github.com/deadsnakes)
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        g++ \
+        gcc \
+        git \
+        make; \
+    \
+    savedAptMark="$(apt-mark showmanual)"; \
+    apt-get install -y --no-install-recommends \
+        dirmngr \
+        gnupg; \
+    \
+    export GNUPGHOME="$(mktemp -d)"; \
+    gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys "$GPG_KEY"; \
+    gpg -o /usr/share/keyrings/deadsnakes.gpg --export "$GPG_KEY"; \
+    echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/deadsnakes.gpg] https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu jammy main" >> /etc/apt/sources.list; \
+    \
+    apt-mark auto '.*' > /dev/null; \
+    apt-mark manual $savedAptMark; \
+    apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
+    rm -rf /var/lib/apt/lists/*
 
-# Install dependencies required for building python
-# hadolint ignore=DL3008
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-    make \
-    build-essential \
-    libssl-dev \
-    zlib1g-dev \
-    libbz2-dev \
-    libreadline-dev \
-    libsqlite3-dev \
-    liblzma-dev \
-    wget \
-    curl \
-    llvm \
-    libncurses5-dev \
-    xz-utils \
-    tk-dev \
-    libxml2-dev \
-    libxmlsec1-dev \
-    git \
-    ca-certificates \
-    libffi-dev \
-  && apt-get clean autoclean \
-  && apt-get autoremove -y \
-  && rm -rf /var/lib/apt/lists/* \
-  && rm -f /var/cache/apt/archives/*.deb
+# Install Python and pip and cleanup.
+RUN set -eux; \
+    apt-get update; \
+    DEBIAN_FRONTEND=noninteractive \
+    apt-get install -y --no-install-recommends \
+        python3.7 \
+        python3.8 \
+        python3.9 \
+        python3.10 \
+        python3.11 \
+        \
+        python3.7-dev \
+        python3.8-dev \
+        python3.9-dev \
+        python3.10-dev \
+        python3.11-dev \
+        \
+        python3.7-venv \
+        python3.8-venv \
+        python3.9-venv \
+        python3.10-venv \
+        python3.11-venv \
+        \
+        python3.7-distutils \
+        python3.8-distutils \
+        python3.9-distutils \
+        python3.10-distutils \
+        python3.11-distutils \
+        \
+        python3-pip; \
+    rm -rf /var/lib/apt/lists/*; \
+    \
+    python3.11 -m pip install --upgrade pip
 
-# Install python versions using pyenv
-RUN git clone https://github.com/pyenv/pyenv $PYENV_ROOT
+# Install tox and add a user with an explicit UID/GID.
+RUN set -eux; \
+    pip3.11 install --no-cache tox; \
+    groupadd -r tox --gid=10000; \
+    useradd --no-log-init -r -g tox -m --uid=10000 tox; \
+    mkdir /app; \
+    chown tox:tox /app
 
-# TODO
-ENV DISTUTILS_DEBUG=1
-ENV PYTHON_MAKE_OPTS="-d -p"
-ENV PYENV_DEBUG=1
+WORKDIR /app
+VOLUME /app
 
-# hadolint ignore=SC2086
-RUN for version in ${PYTHON_VERSIONS}; do \
-  set -ex \
-    && /root/.pyenv/bin/pyenv install ${version} \
-    && /root/.pyenv/versions/${version}*/bin/python -m pip install --upgrade pip \
-  ; done
-ENV PATH $PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH
-# hadolint ignore=SC2046
-RUN pyenv global $(pyenv versions --bare)
-
-# Setup commandline tools (using the first python version in the list)
-# hadolint ignore=DL3013
-RUN pip install --no-cache-dir tox
-
-CMD ["python"]
+USER tox
+ENTRYPOINT ["tox"]
