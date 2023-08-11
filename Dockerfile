@@ -69,7 +69,8 @@ RUN set -eux \
   ; rm -rf /var/lib/apt/lists/*;
 
 # Install PyPy
-RUN if [ "$TARGETARCH" = "arm64" ] ; then curl -L --show-error --retry 5 -o /pypy.tar.bz2 https://downloads.python.org/pypy/pypy-${PYTHON_PYPY_VERSION}-aarch64.tar.bz2 \
+RUN set -eux \
+  ; if [ "$TARGETARCH" = "arm64" ] ; then curl -L --show-error --retry 5 -o /pypy.tar.bz2 https://downloads.python.org/pypy/pypy${PYTHON_PYPY_VERSION}-aarch64.tar.bz2 \
   ; else curl -L --show-error --retry 5 -o /pypy.tar.bz2 https://downloads.python.org/pypy/pypy${PYTHON_PYPY_VERSION}-linux64.tar.bz2 \
   ; fi \
   ; mkdir /pypy && tar -xf /pypy.tar.bz2 -C /pypy --strip-components=1
