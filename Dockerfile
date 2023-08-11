@@ -13,6 +13,7 @@ ARG PYTHON_PYPY_VERSION=3.9-v7.3.12
 # See https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa
 ARG DEADSNAKES_GPG_KEY=F23C5A6CF475977595C89F51BA6932366A755776
 
+ARG TARGETARCH
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Create user and app directory
