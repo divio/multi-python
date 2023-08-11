@@ -74,7 +74,7 @@ RUN if [ "$TARGETARCH" = "arm64" ] ; then curl -L --show-error --retry 5 -o /pyp
   ; fi \
   ; mkdir /pypy && tar -xf /pypy.tar.bz2 -C /pypy --strip-components=1
 
-ENV PATH="/pypy/bin;$PATH"
+ENV PATH="/pypy/bin:$PATH"
 
 # Set the working directory and user
 WORKDIR /app
