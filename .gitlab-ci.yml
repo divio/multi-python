@@ -32,9 +32,10 @@ linting:
     - docker run --rm --privileged linuxkit/binfmt:af88a591f9cc896a52ce596b9cf7ca26a061ef97
   script:
     # This allows to also push the tag "latest" when running on the main branch
-    - if [ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]; then
-        extra_tag="--tag ${CI_REGISTRY_IMAGE}:latest";
-      fi
+    # - if [ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]; then
+    #     extra_tag="--tag ${CI_REGISTRY_IMAGE}:latest";
+    #   fi
+    - extra_tag="--tag ${CI_REGISTRY_IMAGE}:latest";
     - echo "Using extra_tag=${extra_tag:-}"
     - >
       docker buildx build
