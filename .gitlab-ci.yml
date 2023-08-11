@@ -8,7 +8,8 @@ include:
 variables:
   BUILDX_VERSION: v0.11.2
   BUILDX_ARCH: linux-amd64
-  PLATFORMS: linux/arm64/v8,linux/amd64
+  #PLATFORMS: linux/arm64/v8,linux/amd64
+  PLATFORMS: linux/amd64
   PUBLIC_REPOSITORY: divio/multi-python
   BUILDX_URL: https://github.com/docker/buildx/releases/download/${BUILDX_VERSION}/buildx-${BUILDX_VERSION}.${BUILDX_ARCH}
   LINT_FILE_DOCKER: Dockerfile
@@ -32,10 +33,9 @@ linting:
     - docker run --rm --privileged linuxkit/binfmt:af88a591f9cc896a52ce596b9cf7ca26a061ef97
   script:
     # This allows to also push the tag "latest" when running on the main branch
-    # - if [ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]; then
-    #     extra_tag="--tag ${CI_REGISTRY_IMAGE}:latest";
-    #   fi
-    - extra_tag="--tag ${CI_REGISTRY_IMAGE}:latest";
+    - if [ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]; then
+        extra_tag="--tag ${CI_REGISTRY_IMAGE}:latest";
+      fi
     - echo "Using extra_tag=${extra_tag:-}"
     - >
       docker buildx build
@@ -51,6 +51,15 @@ build-dev:
     IMAGE_NAME: ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_IID}
   except:
     - tags
+
+test:
+  stage: qa
+  needs: [build-dev]
+  image: ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_IID}
+  except:
+    - tags
+  script:
+    - cd test && tox
 
 build-prod:
   extends: .build
