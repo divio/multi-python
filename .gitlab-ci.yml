@@ -3,97 +3,44 @@ image: docker:latest
 include:
   - project: divio/infra/gitlab-pipelines
     ref: master
-    file: base/.gitlab-ci.yml
+    file: docker-project/.gitlab-ci.yml
 
 variables:
-  BUILDX_VERSION: v0.11.2
-  BUILDX_ARCH: linux-amd64
-  PLATFORMS: linux/arm64/v8,linux/amd64
   PUBLIC_REPOSITORY: divio/multi-python
-  BUILDX_URL: https://github.com/docker/buildx/releases/download/${BUILDX_VERSION}/buildx-${BUILDX_VERSION}.${BUILDX_ARCH}
-  LINT_FILE_DOCKER: Dockerfile
 
-linting:
-  allow_failure: true
-
-.build:
-  stage: build
-  needs: []
+build-docker-image:
   before_script:
-    # Install buildx
-    - mkdir -p /usr/libexec/docker/cli-plugins
-    - wget -q -O /usr/libexec/docker/cli-plugins/docker-buildx ${BUILDX_URL}
-    - chmod +x /usr/libexec/docker/cli-plugins/docker-buildx
-    - docker buildx version
-    - docker buildx create --use
-    # Login to the Gitlab registry
-    - docker login -u ${CI_REGISTRY_USER} -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
-    # Update the QEMU version on the host
+    - !reference [.buildx, install]
+    # Update the QEMU version, this is required for libc-bin on ARM
     - docker run --rm --privileged linuxkit/binfmt:af88a591f9cc896a52ce596b9cf7ca26a061ef97
-  script:
-    # This allows to also push the tag "latest" when running on the main branch
-    - if [ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]; then
-        extra_tag="--tag ${CI_REGISTRY_IMAGE}:latest";
-      fi
-    - echo "Using extra_tag=${extra_tag:-}"
-    - >
-      docker buildx build
-      --platform ${PLATFORMS}
-      --tag ${IMAGE_NAME}
-      ${extra_tag:-}
-      --push
-      .
-
-build-dev:
-  extends: .build
-  variables:
-    IMAGE_NAME: ${CI_REGISTRY_IMAGE}/build:${CI_PIPELINE_IID}
-  except:
-    - tags
 
 test:
   stage: qa
-  needs: [build-dev]
+  needs: [build-docker-image]
   image: ${CI_REGISTRY_IMAGE}/build:${CI_PIPELINE_IID}
   except:
     - tags
   script:
     - cd test && tox
 
-build-prod:
-  extends: .build
+release-tag-docker-image-public:
+  extends: release-tag-docker-image
   variables:
-    IMAGE_NAME: ${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}
-  only:
-    - tags
-
-push:
-  stage: release
-  needs:
-    - build-prod
-  image:
-    name: ananace/skopeo
-    entrypoint: [""]
-  variables:
-    GIT_STRATEGY: none
-    SRC_REGISTRY_CREDS: ${CI_REGISTRY_USER}:${CI_JOB_TOKEN}
     DST_REGISTRY_CREDS: ${DOCKER_HUB_USER}:${DOCKER_HUB_TOKEN}
   script:
     - >
       /skopeo
       copy
-      --multi-arch all
+      --multi-arch=all
       --src-creds=${SRC_REGISTRY_CREDS}
       --dest-creds=${DST_REGISTRY_CREDS}
-      docker://${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}
-      docker://${PUBLIC_REPOSITORY}:latest
+      docker://${BUILD_IMAGE_NAME}
+      docker://${PUBLIC_REPOSITORY}:${CI_COMMIT_TAG}
     - >
       /skopeo
       copy
-      --multi-arch all
+      --multi-arch=all
       --src-creds=${SRC_REGISTRY_CREDS}
       --dest-creds=${DST_REGISTRY_CREDS}
-      docker://${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}
-      docker://${PUBLIC_REPOSITORY}:${CI_COMMIT_TAG}
-  only:
-    - tags
+      docker://${BUILD_IMAGE_NAME}
+      docker://${PUBLIC_REPOSITORY}:latest
