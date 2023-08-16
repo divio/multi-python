@@ -7,6 +7,7 @@ include:
 
 variables:
   PUBLIC_REPOSITORY: divio/multi-python
+  PUBLIC_CREDS: ${DOCKER_HUB_USER}:${DOCKER_HUB_TOKEN}
 
 build-docker-image:
   before_script:
@@ -23,24 +24,12 @@ test:
   script:
     - cd test && tox
 
-release-tag-docker-image-public:
-  extends: release-tag-docker-image
+release-latest-docker-image:
   variables:
-    DST_REGISTRY_CREDS: ${DOCKER_HUB_USER}:${DOCKER_HUB_TOKEN}
-  script:
-    - >
-      /skopeo
-      copy
-      --multi-arch=all
-      --src-creds=${SRC_REGISTRY_CREDS}
-      --dest-creds=${DST_REGISTRY_CREDS}
-      docker://${BUILD_IMAGE_NAME}
-      docker://${PUBLIC_REPOSITORY}:${CI_COMMIT_TAG}
-    - >
-      /skopeo
-      copy
-      --multi-arch=all
-      --src-creds=${SRC_REGISTRY_CREDS}
-      --dest-creds=${DST_REGISTRY_CREDS}
-      docker://${BUILD_IMAGE_NAME}
-      docker://${PUBLIC_REPOSITORY}:latest
+    DST_REGISTRY_CREDS: ${PUBLIC_CREDS}
+    TARGET_IMAGE_NAME: ${PUBLIC_REPOSITORY}:latest
+
+release-tag-docker-image:
+  variables:
+    DST_REGISTRY_CREDS: ${PUBLIC_CREDS}
+    TARGET_IMAGE_NAME: ${PUBLIC_REPOSITORY}:${CI_COMMIT_TAG}
