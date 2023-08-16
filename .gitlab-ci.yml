@@ -1,0 +1,35 @@
+image: docker:latest
+
+include:
+  - project: divio/infra/gitlab-pipelines
+    ref: master
+    file: docker-project/.gitlab-ci.yml
+
+variables:
+  PUBLIC_REPOSITORY: divio/multi-python
+  PUBLIC_CREDS: ${DOCKER_HUB_USER}:${DOCKER_HUB_TOKEN}
+
+build-docker-image:
+  before_script:
+    - !reference [.buildx, install]
+    # Update the QEMU version, this is required for libc-bin on ARM
+    - docker run --rm --privileged linuxkit/binfmt:af88a591f9cc896a52ce596b9cf7ca26a061ef97
+
+test:
+  stage: qa
+  needs: [build-docker-image]
+  image: ${CI_REGISTRY_IMAGE}/build:${CI_PIPELINE_IID}
+  except:
+    - tags
+  script:
+    - cd test && tox
+
+release-latest-docker-image:
+  variables:
+    DST_REGISTRY_CREDS: ${PUBLIC_CREDS}
+    TARGET_IMAGE_NAME: ${PUBLIC_REPOSITORY}:latest
+
+release-tag-docker-image:
+  variables:
+    DST_REGISTRY_CREDS: ${PUBLIC_CREDS}
+    TARGET_IMAGE_NAME: ${PUBLIC_REPOSITORY}:${CI_COMMIT_TAG}
