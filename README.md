@@ -19,7 +19,7 @@ be available at https://www.pypy.org/download.html.
 
 Run the following from a terminal at the root of your Python project:
 ```bash
-docker run --rm -it -v $(PWD):/app registry.gitlab.com/divio/incubator/multi-Python:latest tox
+docker run --rm -it -v $(PWD):/app divio/multi-python:latest tox
 ```
 
 ## Development

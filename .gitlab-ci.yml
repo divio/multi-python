@@ -6,7 +6,8 @@ include:
     file: docker-project/.gitlab-ci.yml
 
 variables:
-  PUBLIC_REPOSITORY: divio/multi-python
+  PUBLIC_REPO: divio/multi-python
+  PUBLIC_REPO_URL: https://github.com/divio/multi-python
   PUBLIC_CREDS: ${DOCKER_HUB_USER}:${DOCKER_HUB_TOKEN}
 
 build-docker-image:
@@ -27,9 +28,9 @@ test:
 release-latest-docker-image:
   variables:
     DST_REGISTRY_CREDS: ${PUBLIC_CREDS}
-    TARGET_IMAGE_NAME: ${PUBLIC_REPOSITORY}:latest
+    TARGET_IMAGE_NAME: ${PUBLIC_REPO}:latest
 
 release-tag-docker-image:
   variables:
     DST_REGISTRY_CREDS: ${PUBLIC_CREDS}
-    TARGET_IMAGE_NAME: ${PUBLIC_REPOSITORY}:${CI_COMMIT_TAG}
+    TARGET_IMAGE_NAME: ${PUBLIC_REPO}:${CI_COMMIT_TAG}
