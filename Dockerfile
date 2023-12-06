@@ -30,6 +30,7 @@ RUN set -eux \
       bzip2 \
       make \
       sudo \
+      libpq-dev \
   ; savedAptMark="$(apt-mark showmanual)" \
   \
   ; apt-get install -y --no-install-recommends \
