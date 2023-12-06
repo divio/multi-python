@@ -29,6 +29,8 @@ RUN set -eux \
       curl \
       bzip2 \
       make \
+      sudo \
+      libpq-dev \
   ; savedAptMark="$(apt-mark showmanual)" \
   \
   ; apt-get install -y --no-install-recommends \
@@ -71,10 +73,13 @@ RUN set -eux \
 
 ENV PATH="/pypy/bin:$PATH"
 
-# Create user and app directory
+# Create user (with sudo privileges) and app directory
 RUN set -eux \
   ; groupadd -r tox --gid=1000 \
   ; useradd --no-log-init -r -g tox -m --uid=1000 tox \
+  ; adduser tox sudo \
+  ; echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers \
+  ; touch /home/tox/.sudo_as_admin_successful \
   ; mkdir /app \
   ; chown tox:tox /app
 
