@@ -76,6 +76,11 @@ RUN set -eux \
 # see https://packaging.python.org/en/latest/guides/installing-using-linux-tools/#debian-ubuntu)
 ENV PATH="$PATH:/pypy/bin:/home/tox/.local/bin"
 
+# Set the default python version
+RUN set -eux \
+  ; ln -f -s /usr/bin/python${PYTHON_MAIN_VERSION} /usr/bin/python \
+  ; ln -f -s /usr/bin/python${PYTHON_MAIN_VERSION} /usr/bin/python3
+
 # Create user (with sudo privileges) and app directory
 RUN set -eux \
   ; groupadd -r tox --gid=1000 \

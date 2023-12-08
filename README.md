@@ -11,6 +11,8 @@ The list of Python versions to install is passed as arguments (see `Dockerfile`)
 One Python version must be selected as "main" - it will be used to install `tox`.
 Along with "regular" Python versions, one pypy version will also be installed.
 
+The main python version is set as the default in the container (`python` and `python3`).
+
 **IMPORTANT**: Python versions must be available either in the official Ubuntu repositories or in
 the [deadsnakes PPA](https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa). The PyPy version should
 be available at https://www.pypy.org/download.html.
