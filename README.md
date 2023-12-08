@@ -22,6 +22,9 @@ Run the following from a terminal at the root of your Python project:
 docker run --rm -it -v $(PWD):/app divio/multi-python:latest tox
 ```
 
+The default user is `tox`. If you need to install extra dependencies, `tox` has sudo rights
+so it is possible to run `sudo apt update && sudo apt install ...`.
+
 ## Development
 
 After updating the Python versions in the `Dockerfile`, ensure you also update `test/tox.ini` to

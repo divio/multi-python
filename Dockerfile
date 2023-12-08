@@ -5,7 +5,7 @@ ARG PYTHON_MAIN_VERSION=3.11
 ## Other python versions to install
 # Must be available either in the deadsnakes PPA or in
 # the official Ubuntu repositories
-ARG PYTHON_OTHER_VERSIONS="3.7 3.8 3.9 3.10"
+ARG PYTHON_OTHER_VERSIONS="3.7 3.8 3.9 3.10 3.12"
 ## PyPy version to install
 # for versions see https://www.pypy.org/download.html
 ARG PYTHON_PYPY_VERSION=3.9-v7.3.12
@@ -59,7 +59,7 @@ RUN set -eux \
         python${version}-dev \
         python${version}-venv \
         python${version}-distutils \
-      ; python${version} -m pip install --upgrade pip \
+      ; python${version} -m pip install --upgrade pip || python${version} -m ensurepip --upgrade \
     ; done \
   ; python${PYTHON_MAIN_VERSION} -m pip install --no-cache tox \
   ; rm -rf /var/lib/apt/lists/*;
