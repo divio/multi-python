@@ -29,3 +29,16 @@ so it is possible to run `sudo apt update && sudo apt install ...`.
 
 After updating the Python versions in the `Dockerfile`, ensure you also update `test/tox.ini` to
 reflect the change.
+
+## About pip
+
+As stated in https://packaging.python.org/en/latest/guides/installing-using-linux-tools/#debian-ubuntu:
+
+> Recent Debian/Ubuntu versions have modified pip to use the “User Scheme” by default,
+> which is a significant behavior change that can be surprising to some users.
+
+In other words, pip now installs libraries and executables in `$HOME/.local` (or `/home/tox/.local`
+in this image).
+
+This has no impact, except when running commands as `sudo`. Just keep in mind the `root` user
+doesn't have the same packages installed.
