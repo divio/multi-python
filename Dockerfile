@@ -71,7 +71,15 @@ RUN set -eux \
   ; fi \
   ; mkdir /pypy && tar -xf /pypy.tar.bz2 -C /pypy --strip-components=1
 
-ENV PATH="/pypy/bin:$PATH"
+# Make pypi available and ensure executables installed by pip are available
+# (pip uses the "User Scheme" in recent Debian/Ubuntu,
+# see https://packaging.python.org/en/latest/guides/installing-using-linux-tools/#debian-ubuntu)
+ENV PATH="$PATH:/pypy/bin:/home/tox/.local/bin"
+
+# Set the default python version
+RUN set -eux \
+  ; ln -f -s /usr/bin/python${PYTHON_MAIN_VERSION} /usr/bin/python \
+  ; ln -f -s /usr/bin/python${PYTHON_MAIN_VERSION} /usr/bin/python3
 
 # Create user (with sudo privileges) and app directory
 RUN set -eux \
