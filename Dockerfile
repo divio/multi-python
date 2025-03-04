@@ -1,11 +1,11 @@
 FROM ubuntu:22.04
 
 ## Main python version to install + use for tox
-ARG PYTHON_MAIN_VERSION=3.11
+ARG PYTHON_MAIN_VERSION=3.13
 ## Other python versions to install
 # Must be available either in the deadsnakes PPA or in
 # the official Ubuntu repositories
-ARG PYTHON_OTHER_VERSIONS="3.7 3.8 3.9 3.10 3.12"
+ARG PYTHON_OTHER_VERSIONS="3.9 3.10 3.11 3.12 3.13"
 ## PyPy version to install
 # for versions see https://www.pypy.org/download.html
 ARG PYTHON_PYPY_VERSION=3.9-v7.3.12
@@ -48,17 +48,26 @@ RUN set -eux \
   ; rm -rf /var/lib/apt/lists/*
 
 # Install pip3, all python versions and tox in the main python version
+# distutils got removed in Python3.12 (https://docs.python.org/dev/whatsnew/3.12.html)
 # hadolint ignore=DL3008,SC2086
 RUN set -eux \
   ; apt-get update \
   ; apt-get install -y --no-install-recommends python3-pip \
   ; for version in ${PYTHON_OTHER_VERSIONS} ${PYTHON_MAIN_VERSION} \
     ; do \
-      apt-get install -y --no-install-recommends \
-        python${version} \
-        python${version}-dev \
-        python${version}-venv \
-        python${version}-distutils \
+      if dpkg --compare-versions "$version" lt "3.12" \
+      ; then \
+        apt-get install -y --no-install-recommends \
+          python${version} \
+          python${version}-dev \
+          python${version}-venv \
+          python${version}-distutils \
+      ; else \
+        apt-get install -y --no-install-recommends \
+          python${version} \
+          python${version}-dev \
+          python${version}-venv \
+      ; fi \
       ; python${version} -m pip install --upgrade pip || python${version} -m ensurepip --upgrade \
     ; done \
   ; python${PYTHON_MAIN_VERSION} -m pip install --no-cache tox \
