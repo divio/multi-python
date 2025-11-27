@@ -5,7 +5,7 @@ ARG PYTHON_MAIN_VERSION=3.13
 ## Other python versions to install
 # Must be available either in the deadsnakes PPA or in
 # the official Ubuntu repositories
-ARG PYTHON_OTHER_VERSIONS="3.9 3.10 3.11 3.12 3.13"
+ARG PYTHON_OTHER_VERSIONS="3.9 3.10 3.11 3.12 3.13 3.14"
 ## PyPy version to install
 # for versions see https://www.pypy.org/download.html
 ARG PYTHON_PYPY_VERSION=3.9-v7.3.12
